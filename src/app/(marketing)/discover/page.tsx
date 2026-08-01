@@ -24,13 +24,6 @@ function mapMode(
   return mode;
 }
 
-// Map Prisma's HackathonStatus enum → HackathonCard's status union
-function mapStatus(
-  status: "upcoming" | "live" | "ended"
-): "upcoming" | "live" | "ended" {
-  return status;
-}
-
 export default async function DiscoverPage() {
   // Fetch all non-rejected hackathons, sorted by start date
   const hackathons = await db.hackathon.findMany({
@@ -122,7 +115,7 @@ export default async function DiscoverPage() {
                   organizer: h.organizerName,
                   source: h.source,
                   mode: mapMode(h.mode),
-                  status: mapStatus(h.status),
+                  status: h.status,
                   prizePool: h.prizePool ?? undefined,
                   startDate: h.startDate.toISOString(),
                   endDate: h.endDate.toISOString(),

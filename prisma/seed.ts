@@ -7,10 +7,17 @@
  * Safe to re-run — uses upsert (no duplicate errors).
  */
 
-import { PrismaClient, HackathonMode, HackathonStatus, SubmissionStatus } from "../src/generated/prisma";
+import { config } from "dotenv";
+import { PrismaClient, HackathonMode, HackathonStatus, SubmissionStatus } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import seedData from "./seed-data.json";
 
+// Load env the same way prisma.config.ts does
+config({ path: ".env.local" });
+config({ path: ".env" });
+
 const db = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env["DATABASE_URL"]! }),
   log: ["error", "warn"],
 });
 
