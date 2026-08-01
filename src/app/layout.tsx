@@ -17,11 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "HackRadar — Discover Every Hackathon. Miss Nothing.",
-    template: "%s | HackRadar",
+    default: "HackAtlas — Discover Every Hackathon. Miss Nothing.",
+    template: "%s | HackAtlas",
   },
   description:
-    "HackRadar aggregates hackathons from Devpost, Devfolio, MLH, Unstop, and more. Find, filter, and track every hackathon opportunity in one unified feed.",
+    "HackAtlas aggregates hackathons from Devpost, Devfolio, MLH, Unstop, and more. Find, filter, and track every hackathon opportunity in one unified feed.",
   keywords: [
     "hackathon",
     "hackathons",
@@ -34,22 +34,22 @@ export const metadata: Metadata = {
     "hackathon discovery",
     "tech events",
   ],
-  authors: [{ name: "HackRadar Team" }],
-  creator: "HackRadar",
+  authors: [{ name: "HackAtlas Team" }],
+  creator: "HackAtlas",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://hackradar.dev",
-    siteName: "HackRadar",
-    title: "HackRadar — Discover Every Hackathon. Miss Nothing.",
+    url: "https://hackatlas.dev",
+    siteName: "HackAtlas",
+    title: "HackAtlas — Discover Every Hackathon. Miss Nothing.",
     description:
       "Unified hackathon discovery platform. Aggregating from Devpost, Devfolio, MLH, Unstop, and more.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "HackRadar — Discover Every Hackathon",
+    title: "HackAtlas — Discover Every Hackathon",
     description: "Unified hackathon discovery platform for developers.",
-    creator: "@hackradar",
+    creator: "@hackatlas",
   },
   robots: {
     index: true,

@@ -46,7 +46,7 @@ export function Hero() {
 
           {/* Subheading */}
           <p className="text-lg sm:text-xl text-neutral-400 max-w-2xl mb-10 leading-relaxed">
-            HackRadar aggregates hackathons from Devpost, Devfolio, MLH, Unstop
+            HackAtlas aggregates hackathons from Devpost, Devfolio, MLH, Unstop
             and more — giving you one unified feed to find, filter, and track
             every opportunity that matters to you.
           </p>

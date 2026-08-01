@@ -25,7 +25,7 @@ export function CTA() {
           </h2>
 
           <p className="text-neutral-400 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
-            Join 120K+ developers already using HackRadar to discover
+            Join 120K+ developers already using HackAtlas to discover
             opportunities, build in public, and win prizes.
           </p>
 

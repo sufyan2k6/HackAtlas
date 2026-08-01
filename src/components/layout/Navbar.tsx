@@ -35,7 +35,7 @@ export function Navbar() {
               <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-bold text-white text-lg tracking-tight">
-              Hack<span className="text-violet-400">Radar</span>
+              Hack<span className="text-violet-400">Atlas</span>
             </span>
           </Link>
 

@@ -21,7 +21,7 @@ export function Footer() {
                 <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
               </div>
               <span className="font-bold text-white text-lg tracking-tight">
-                Hack<span className="text-violet-400">Radar</span>
+                Hack<span className="text-violet-400">Atlas</span>
               </span>
             </Link>
             <p className="text-sm text-neutral-500 leading-relaxed max-w-xs mb-6">
@@ -49,7 +49,7 @@ export function Footer() {
             {/* Social links */}
             <div className="flex items-center gap-3">
               <a
-                href="https://x.com/hackradar"
+                href="https://x.com/hackatlas"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-white/5 border border-white/8 text-neutral-500 hover:text-white hover:border-white/20 transition-all"
@@ -58,7 +58,7 @@ export function Footer() {
                 <X className="w-4 h-4" />
               </a>
               <a
-                href="https://github.com/hackradar"
+                href="https://github.com/sufyan2k6/HackAtlas"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-lg bg-white/5 border border-white/8 text-neutral-500 hover:text-white hover:border-white/20 transition-all"
@@ -94,7 +94,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="py-6 border-t border-white/6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-neutral-600">
-            © {currentYear} HackRadar. All rights reserved.
+            © {currentYear} HackAtlas. All rights reserved.
           </p>
           <p className="text-sm text-neutral-700">
             Built for the builder community 🛠️

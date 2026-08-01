@@ -39,9 +39,9 @@ export const FOOTER_LINKS: Record<string, NavLink[]> = {
 };
 
 export const SOCIAL_LINKS = [
-  { label: "Twitter / X", href: "https://x.com/hackradar", external: true },
-  { label: "GitHub", href: "https://github.com/hackradar", external: true },
-  { label: "Discord", href: "https://discord.gg/hackradar", external: true },
+  { label: "Twitter / X", href: "https://x.com/hackatlas", external: true },
+  { label: "GitHub", href: "https://github.com/sufyan2k6/HackAtlas", external: true },
+  { label: "Discord", href: "https://discord.gg/hackatlas", external: true },
 ];
 
 export const HACKATHON_SOURCES = [

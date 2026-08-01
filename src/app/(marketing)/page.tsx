@@ -6,9 +6,9 @@ import { FeaturedHackathons } from "@/components/sections/FeaturedHackathons";
 import { CTA } from "@/components/sections/CTA";
 
 export const metadata: Metadata = {
-  title: "HackRadar — Discover Every Hackathon. Miss Nothing.",
+  title: "HackAtlas — Discover Every Hackathon. Miss Nothing.",
   description:
-    "HackRadar aggregates hackathons from Devpost, Devfolio, MLH, Unstop, and more — giving you one unified feed to find, filter, and track every hackathon opportunity.",
+    "HackAtlas aggregates hackathons from Devpost, Devfolio, MLH, Unstop, and more — giving you one unified feed to find, filter, and track every hackathon opportunity.",
 };
 
 export default function HomePage() {

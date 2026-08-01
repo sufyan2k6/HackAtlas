@@ -23,7 +23,7 @@ export function Features() {
             <GradientText variant="violet">hackathon community</GradientText>
           </h2>
           <p className="text-neutral-400 text-lg max-w-xl mx-auto leading-relaxed">
-            From discovery to submission — HackRadar has every tool a hacker
+            From discovery to submission — HackAtlas has every tool a hacker
             needs to find, track, and win.
           </p>
         </div>
