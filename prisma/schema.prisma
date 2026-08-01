@@ -1,0 +1,224 @@
+// ===========================================================================
+// HackAtlas — Prisma Schema
+// Database: Neon PostgreSQL (serverless)
+// ===========================================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ===========================================================================
+// ENUMS
+// ===========================================================================
+
+enum HackathonMode {
+  online
+  in_person
+  hybrid
+}
+
+enum HackathonStatus {
+  upcoming
+  live
+  ended
+}
+
+enum UserRole {
+  user
+  moderator
+  admin
+}
+
+enum SubmissionStatus {
+  pending
+  approved
+  rejected
+}
+
+// ===========================================================================
+// HACKATHON
+// ===========================================================================
+
+model Hackathon {
+  id                   String          @id @default(cuid())
+  title                String
+  slug                 String          @unique
+  description          String
+  shortDescription     String
+
+  // Source platform info
+  source               String          // devpost | devfolio | mlh | unstop | etc.
+  sourceUrl            String
+  sourceId             String?         // original ID on the source platform
+
+  // Branding
+  logoUrl              String?
+  bannerUrl            String?
+
+  // Organizer (stored as flat fields for simplicity)
+  organizerName        String
+  organizerLogo        String?
+  organizerUrl         String?
+
+  // Schedule
+  startDate            DateTime
+  endDate              DateTime
+  registrationDeadline DateTime?
+
+  // Format
+  mode                 HackathonMode   @default(online)
+  location             String?
+  city                 String?
+  country              String?
+
+  // Prizes
+  prizePool            Int?            // in USD cents to avoid float issues
+  currency             String?         @default("USD")
+
+  // Participation
+  teamSizeMin          Int?
+  teamSizeMax          Int?
+  participantCount     Int?
+
+  // Metadata
+  tracks               String[]        // e.g. ["AI", "Web3", "Climate"]
+  tags                 String[]
+  status               HackathonStatus @default(upcoming)
+  featured             Boolean         @default(false)
+
+  // Submission moderation (for community-submitted hackathons)
+  submissionStatus     SubmissionStatus @default(approved)
+  submittedById        String?
+
+  // Timestamps
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  // Relations
+  bookmarks            Bookmark[]
+
+  @@index([status])
+  @@index([mode])
+  @@index([source])
+  @@index([featured])
+  @@index([startDate])
+  @@index([slug])
+}
+
+// ===========================================================================
+// USER (NextAuth compatible)
+// ===========================================================================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Profile extensions
+  username      String?   @unique
+  bio           String?
+  github        String?
+  linkedin      String?
+  website       String?
+  skills        String[]
+  role          UserRole  @default(user)
+
+  // Notification preferences (stored as flat booleans)
+  notifyEmailDigest      Boolean @default(false)
+  notifyNewHackathons    Boolean @default(true)
+  notifyDeadlines        Boolean @default(true)
+  notifyUpcoming         Boolean @default(true)
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations
+  accounts      Account[]
+  sessions      Session[]
+  bookmarks     Bookmark[]
+
+  @@index([email])
+}
+
+// ===========================================================================
+// NEXTAUTH — Account (OAuth provider data)
+// ===========================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ===========================================================================
+// NEXTAUTH — Session
+// ===========================================================================
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ===========================================================================
+// NEXTAUTH — Verification Token (magic link / email sign-in)
+// ===========================================================================
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ===========================================================================
+// BOOKMARK — User saves a Hackathon
+// ===========================================================================
+
+model Bookmark {
+  id           String   @id @default(cuid())
+  userId       String
+  hackathonId  String
+  createdAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hackathon Hackathon @relation(fields: [hackathonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hackathonId])
+  @@index([userId])
+  @@index([hackathonId])
+}
