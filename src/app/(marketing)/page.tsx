@@ -11,6 +11,9 @@ export const metadata: Metadata = {
     "HackAtlas aggregates hackathons from Devpost, Devfolio, MLH, Unstop, and more — giving you one unified feed to find, filter, and track every hackathon opportunity.",
 };
 
+// Revalidate every 5 minutes so homepage shows fresh database records
+export const revalidate = 300;
+
 export default function HomePage() {
   return (
     <>

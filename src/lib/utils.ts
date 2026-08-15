@@ -103,3 +103,28 @@ export function slugify(str: string): string {
     .replace(/-+/g, "-")
     .trim();
 }
+
+/**
+ * Map source slug to human-readable platform name dynamically.
+ * e.g. "unstop" → "Unstop", "devpost" → "Devpost", "devfolio" → "Devfolio", "mlh" → "MLH"
+ */
+export function formatSourceName(source: string): string {
+  if (!source) return "";
+  const lower = source.toLowerCase();
+  switch (lower) {
+    case "devpost":
+      return "Devpost";
+    case "unstop":
+      return "Unstop";
+    case "devfolio":
+      return "Devfolio";
+    case "mlh":
+      return "MLH";
+    case "hack2skill":
+      return "Hack2Skill";
+    case "hackerearth":
+      return "HackerEarth";
+    default:
+      return source.charAt(0).toUpperCase() + source.slice(1);
+  }
+}

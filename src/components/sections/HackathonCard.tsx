@@ -2,7 +2,7 @@ import { MapPin, Clock, Users, Trophy } from "lucide-react";
 import { Card, CardFooter } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { formatDateRange, formatPrize, daysUntil } from "@/lib/utils";
+import { formatDateRange, formatPrize, daysUntil, formatSourceName } from "@/lib/utils";
 import type { BadgeVariant } from "@/components/ui/Badge";
 
 interface HackathonCardData {
@@ -63,7 +63,7 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
           <Badge variant={modeInfo.variant}>{modeInfo.label}</Badge>
         </div>
         <span className="text-xs text-neutral-600 font-medium">
-          via {hackathon.source}
+          via {formatSourceName(hackathon.source)}
         </span>
       </div>
 
