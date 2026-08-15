@@ -16,6 +16,7 @@ import { DevpostConnector } from "@/connectors/devpost";
 import { DevfolioConnector } from "@/connectors/devfolio";
 import { MLHConnector } from "@/connectors/mlh";
 import { Hack2SkillConnector } from "@/connectors/hack2skill";
+import { HackerEarthConnector } from "@/connectors/hackerearth";
 import type {
   ConnectorRunResult,
   IngestionSummary,
@@ -26,7 +27,7 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // =============================================================================
-// Registry — add new connectors here as the platform grows
+// Registry — all 6 locked MVP connectors registered
 // =============================================================================
 
 function buildRegistry(): ConnectorRegistry {
@@ -36,7 +37,7 @@ function buildRegistry(): ConnectorRegistry {
     new DevfolioConnector(),    // Real Connector #3 — Devfolio (India/Global)
     new MLHConnector(),         // Real Connector #4 — MLH (Global)
     new Hack2SkillConnector(),  // Real Connector #5 — Hack2Skill (India)
-    // new MockConnector(),        // uncomment to re-enable for framework testing
+    new HackerEarthConnector(), // Real Connector #6 — HackerEarth (Global)
   ]);
 }
 
