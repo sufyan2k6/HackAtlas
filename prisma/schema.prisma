@@ -26,6 +26,7 @@ enum HackathonStatus {
   upcoming
   live
   ended
+  cancelled
 }
 
 enum UserRole {

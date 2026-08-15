@@ -11,7 +11,7 @@ interface HackathonCardData {
   organizer: string;
   source: string;
   mode: "online" | "in-person" | "hybrid";
-  status: "upcoming" | "live" | "ended";
+  status: "upcoming" | "live" | "ended" | "cancelled";
   prizePool?: number;
   currency?: string;
   startDate: string;

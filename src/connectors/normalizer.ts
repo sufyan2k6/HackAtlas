@@ -69,7 +69,7 @@ export interface NormalizedEvent {
   tags: string[];
 
   // Computed
-  status: "upcoming" | "live" | "ended";
+  status: "upcoming" | "live" | "ended" | "cancelled";
   featured: boolean;
 
   // Moderation
@@ -81,18 +81,31 @@ export interface NormalizedEvent {
 // =============================================================================
 
 /**
- * Derives the hackathon's current status from its date window.
+ * Derives the hackathon's lifecycle status from its date window.
  *
- * Rules (evaluated against UTC now):
- *   - now < startDate               → "upcoming"
- *   - startDate ≤ now ≤ endDate     → "live"
- *   - now > endDate                 → "ended"
+ * Rules (evaluated against UTC now), per approved MVP lifecycle policy:
+ *   - registrationDeadline present and passed → "ended"
+ *   - now < startDate                         → "upcoming"
+ *   - startDate ≤ now ≤ endDate               → "live"
+ *   - now > endDate                           → "ended"
+ *
+ * Note: "cancelled" is never inferred from dates alone — it requires
+ * explicit evidence set elsewhere (e.g., admin tooling). Connectors
+ * operating on an open feed will only ever produce upcoming/live/ended.
  */
 function inferStatus(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  registrationDeadline: Date | null
 ): "upcoming" | "live" | "ended" {
   const now = Date.now();
+
+  // Rule 3: if registration deadline is known and has passed, treat as ended.
+  // This covers events that dropped off an open feed due to reg closing.
+  if (registrationDeadline && now > registrationDeadline.getTime()) {
+    return "ended";
+  }
+
   const start = startDate.getTime();
   const end = endDate.getTime();
 
@@ -248,7 +261,7 @@ export function normalizeEvent(raw: HackAtlasEvent): NormalizationResult {
     }
 
     // ── Status (inferred here — connectors do NOT set this) ───────────────────
-    const status = inferStatus(startDate, endDate);
+    const status = inferStatus(startDate, endDate, registrationDeadline);
 
     // ── Slug ──────────────────────────────────────────────────────────────────
     const slug = generateSlug(title, source, sourceId);

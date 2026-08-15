@@ -25,10 +25,13 @@ function mapMode(
 }
 
 export default async function DiscoverPage() {
-  // Fetch all non-rejected hackathons, sorted by start date
+  // Fetch only currently-relevant hackathons (upcoming + live).
+  // ENDED and CANCELLED records are preserved in Neon as historical record
+  // but excluded from the default Discover feed per the MVP lifecycle policy.
   const hackathons = await db.hackathon.findMany({
     where: {
       submissionStatus: "approved",
+      status: { notIn: ["ended", "cancelled"] },
     },
     orderBy: [
       { featured: "desc" },
