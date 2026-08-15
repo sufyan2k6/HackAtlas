@@ -1,10 +1,10 @@
 // =============================================================================
 // HackAtlas Connector Framework — Ingestion API Route
 //
-// POST /api/ingest  — trigger the full ingestion pipeline
-// GET  /api/ingest  — health check / connector registry status
+// POST /api/ingest  — trigger the full ingestion pipeline (manual / programmatic)
+// GET  /api/ingest  — Vercel Cron trigger (with CRON_SECRET) OR health check/metadata (with INGEST_SECRET)
 //
-// Auth: Bearer token matching process.env.INGEST_SECRET
+// Auth: Bearer token matching process.env.CRON_SECRET (scheduler) or process.env.INGEST_SECRET (manual)
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -16,6 +16,10 @@ import type {
   ConnectorRunResult,
   IngestionSummary,
 } from "@/connectors/types";
+
+// Route Segment Config for Vercel / serverless execution duration (60s max)
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 // =============================================================================
 // Registry — add new connectors here as the platform grows
@@ -34,27 +38,37 @@ function buildRegistry(): ConnectorRegistry {
 // Auth Guard
 // =============================================================================
 
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.INGEST_SECRET;
+type AuthRole = "cron" | "manual" | "none";
 
-  // If no secret is set in env, block all requests in production and warn in dev
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[Ingest] INGEST_SECRET is not set — blocking request in production."
-      );
-      return false;
-    }
-    // Development convenience: allow if secret is explicitly unset
-    console.warn(
-      "[Ingest] INGEST_SECRET not set — allowing request in development mode."
-    );
-    return true;
-  }
+function getAuthRole(req: NextRequest): AuthRole {
+  const cronSecret = process.env.CRON_SECRET;
+  const ingestSecret = process.env.INGEST_SECRET;
 
   const authHeader = req.headers.get("authorization") ?? "";
   const [scheme, token] = authHeader.split(" ");
-  return scheme === "Bearer" && token === secret;
+
+  if (scheme !== "Bearer" || !token) {
+    // Development convenience: allow if secrets are explicitly unset in non-production
+    if (process.env.NODE_ENV !== "production" && !cronSecret && !ingestSecret) {
+      console.warn(
+        "[Ingest] Neither CRON_SECRET nor INGEST_SECRET set — allowing request in development mode."
+      );
+      return "manual";
+    }
+    return "none";
+  }
+
+  // 1. Check if token matches Vercel Cron secret
+  if (cronSecret && token === cronSecret) {
+    return "cron";
+  }
+
+  // 2. Check if token matches Ingest secret
+  if (ingestSecret && token === ingestSecret) {
+    return "manual";
+  }
+
+  return "none";
 }
 
 // =============================================================================
@@ -154,17 +168,10 @@ async function upsertEvent(event: ReturnType<typeof normalizeBatch>["normalized"
 }
 
 // =============================================================================
-// POST /api/ingest — Run the full pipeline
+// Core Ingestion Pipeline Execution
 // =============================================================================
 
-export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!isAuthorized(req)) {
-    return NextResponse.json(
-      { error: "Unauthorized — valid Bearer token required." },
-      { status: 401 }
-    );
-  }
-
+async function executeIngestionPipeline(): Promise<IngestionSummary> {
   const pipelineStart = Date.now();
   const startedAt = new Date().toISOString();
   const registry = buildRegistry();
@@ -263,23 +270,49 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       `${connectorResults.reduce((a, r) => a + r.updated, 0)} updated`
   );
 
-  return NextResponse.json(summary, { status: 200 });
+  return summary;
 }
 
 // =============================================================================
-// GET /api/ingest — Connector registry health / metadata
+// POST /api/ingest — Manual or programmatic pipeline execution
 // =============================================================================
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  if (!isAuthorized(req)) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const role = getAuthRole(req);
+  if (role === "none") {
     return NextResponse.json(
       { error: "Unauthorized — valid Bearer token required." },
       { status: 401 }
     );
   }
 
-  const registry = buildRegistry();
+  const summary = await executeIngestionPipeline();
+  return NextResponse.json(summary, { status: 200 });
+}
 
+// =============================================================================
+// GET /api/ingest — Vercel Cron trigger OR Connector registry metadata
+// =============================================================================
+
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const role = getAuthRole(req);
+  if (role === "none") {
+    return NextResponse.json(
+      { error: "Unauthorized — valid Bearer token required." },
+      { status: 401 }
+    );
+  }
+
+  // If invoked by Vercel Cron (CRON_SECRET) or explicitly requested via ?run=true, trigger ingestion
+  const shouldRun = role === "cron" || req.nextUrl.searchParams.get("run") === "true";
+
+  if (shouldRun) {
+    const summary = await executeIngestionPipeline();
+    return NextResponse.json(summary, { status: 200 });
+  }
+
+  // Otherwise (e.g. INGEST_SECRET without ?run=true), return registry health & metadata
+  const registry = buildRegistry();
   return NextResponse.json(
     {
       registeredConnectors: registry.size,
@@ -289,3 +322,4 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     { status: 200 }
   );
 }
+
