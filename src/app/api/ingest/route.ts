@@ -12,6 +12,7 @@ import { db } from "@/lib/db";
 import { ConnectorRegistry } from "@/connectors/registry";
 import { normalizeBatch } from "@/connectors/normalizer";
 import { UnstopConnector } from "@/connectors/unstop/UnstopConnector";
+import { DevpostConnector } from "@/connectors/devpost";
 import type {
   ConnectorRunResult,
   IngestionSummary,
@@ -27,9 +28,9 @@ export const dynamic = "force-dynamic";
 
 function buildRegistry(): ConnectorRegistry {
   return new ConnectorRegistry().registerAll([
-    new UnstopConnector(), // Real Connector #1 — Unstop (India)
-    // new MockConnector(),   // uncomment to re-enable for framework testing
-    // new DevpostConnector(),
+    new UnstopConnector(),  // Real Connector #1 — Unstop (India)
+    new DevpostConnector(), // Real Connector #2 — Devpost (Global)
+    // new MockConnector(),    // uncomment to re-enable for framework testing
     // new MLHConnector(),
   ]);
 }
