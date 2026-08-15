@@ -158,28 +158,92 @@ function sumPrizePool(prizes: UnstopPrize[]): number | undefined {
 const UNSTOP_API_BASE =
   "https://unstop.com/api/public/opportunity/search-result";
 
+/** Maximum pages fetched per run. Safety cap against a broken API returning a
+ *  huge last_page value. 20 pages × 15 per_page = 300 events — comfortably
+ *  above Unstop's current open hackathon count. */
+const MAX_PAGES = 20;
+
+/** Results per page — Unstop supports up to 20; 15 is confirmed stable. */
+const PER_PAGE = 15;
+
 export class UnstopConnector extends BaseConnector<UnstopRawEvent> {
   readonly name = "Unstop Connector";
-  readonly version = "1.0.0";
+  readonly version = "2.0.0";
   readonly source = "unstop";
   readonly description =
-    "Fetches live Indian hackathon listings from Unstop's public JSON REST API " +
-    "(no authentication required). " +
+    "Fetches ALL open Indian hackathon listings from Unstop's public JSON REST API " +
+    "(no authentication required). Paginates automatically using last_page from the " +
+    "API response (capped at MAX_PAGES=" + MAX_PAGES + " for safety). " +
     "Endpoint: GET /api/public/opportunity/search-result?opportunity=hackathons";
 
+  // ── Public entry point ────────────────────────────────────────────────────
+
   /**
-   * Fetches up to 15 open hackathons from Unstop (page 1).
+   * Fetches every page of open hackathons from Unstop and returns a flat
+   * array of canonical HackAtlasEvents.
    *
-   * Key discovery: `opportunity=hackathons` (plural) must be used;
-   * the singular form returns an empty result set.
+   * Strategy:
+   *   1. Fetch page 1 to learn last_page (total pages from the API).
+   *   2. Cap at MAX_PAGES to protect against a broken API.
+   *   3. Fetch pages 2…N in sequence (Unstop is rate-limit-sensitive).
+   *   4. Accumulate and return all successfully mapped events.
    *
-   * Per-event try/catch ensures one malformed record never breaks the batch.
+   * Failures on individual pages are logged and skipped; they do not abort
+   * the run so a transient network hiccup on page 3 doesn't lose pages 4+.
    */
   async fetch(): Promise<HackAtlasEvent[]> {
+    const allEvents: HackAtlasEvent[] = [];
+
+    // ── Page 1: get data + pagination metadata ────────────────────────────
+    const firstPage = await this.fetchPage(1);
+    const lastPage = Math.min(firstPage.lastPage, MAX_PAGES);
+
+    console.log(
+      `[UnstopConnector] Total available: ${firstPage.total} hackathons ` +
+        `across ${firstPage.lastPage} page(s). ` +
+        `Will fetch ${lastPage} page(s) (MAX_PAGES=${MAX_PAGES}, PER_PAGE=${PER_PAGE}).`
+    );
+
+    allEvents.push(...this.mapPage(firstPage.rawEvents, 1));
+
+    // ── Pages 2…lastPage ─────────────────────────────────────────────────
+    for (let page = 2; page <= lastPage; page++) {
+      try {
+        const result = await this.fetchPage(page);
+        allEvents.push(...this.mapPage(result.rawEvents, page));
+      } catch (err) {
+        // One failed page must not abort the whole run
+        console.error(
+          `[UnstopConnector] Page ${page}/${lastPage} failed — skipping: ` +
+            (err instanceof Error ? err.message : String(err))
+        );
+      }
+    }
+
+    console.log(
+      `[UnstopConnector] Pagination complete. ` +
+        `${allEvents.length} mappable events collected across ${lastPage} page(s).`
+    );
+
+    return allEvents;
+  }
+
+  // ── Private helpers ───────────────────────────────────────────────────────
+
+  /**
+   * Fetch a single page from the Unstop API.
+   * Preserves the original request config: 30s timeout, same headers, same
+   * query params. Throws on HTTP errors or malformed JSON.
+   */
+  private async fetchPage(page: number): Promise<{
+    rawEvents: UnstopRawEvent[];
+    lastPage: number;
+    total: number;
+  }> {
     const url = new URL(UNSTOP_API_BASE);
     url.searchParams.set("opportunity", "hackathons"); // plural — critical
-    url.searchParams.set("page", "1");
-    url.searchParams.set("per_page", "15");
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("per_page", String(PER_PAGE));
     url.searchParams.set("oppstatus", "open");
     url.searchParams.set("sortBy", "");
     url.searchParams.set("orderBy", "");
@@ -192,7 +256,7 @@ export class UnstopConnector extends BaseConnector<UnstopRawEvent> {
         "User-Agent":
           "Mozilla/5.0 (compatible; HackAtlas/1.0; +https://unstop.com)",
       },
-      // 30-second timeout via AbortController
+      // 30-second timeout per page request (unchanged from v1)
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -208,42 +272,50 @@ export class UnstopConnector extends BaseConnector<UnstopRawEvent> {
       body = (await response.json()) as UnstopApiResponse;
     } catch {
       throw new Error(
-        "[UnstopConnector] Failed to parse API response as JSON."
+        `[UnstopConnector] Failed to parse page ${page} API response as JSON.`
       );
     }
 
     const rawEvents = body?.data?.data;
     if (!Array.isArray(rawEvents)) {
       throw new Error(
-        "[UnstopConnector] Unexpected response shape — data.data is not an array."
+        `[UnstopConnector] Page ${page}: unexpected response shape — data.data is not an array.`
       );
     }
 
     console.log(
-      `[UnstopConnector] Fetched ${rawEvents.length} raw events ` +
-        `(total available: ${body.data.total ?? "unknown"}, ` +
-        `page 1 of ${body.data.last_page ?? "?"})`
+      `[UnstopConnector] Page ${page}/${body.data.last_page ?? "?"}: ` +
+        `received ${rawEvents.length} raw event(s).`
     );
 
-    const events: HackAtlasEvent[] = [];
+    return {
+      rawEvents,
+      lastPage: body.data.last_page ?? 1,
+      total: body.data.total ?? 0,
+    };
+  }
 
+  /**
+   * Map a page's raw events to HackAtlasEvents.
+   * Per-event try/catch: one malformed record never breaks the batch.
+   */
+  private mapPage(rawEvents: UnstopRawEvent[], page: number): HackAtlasEvent[] {
+    const events: HackAtlasEvent[] = [];
     for (const raw of rawEvents) {
       try {
         const event = this.mapEvent(raw);
         if (event) events.push(event);
       } catch (err) {
-        // One bad event must not break the batch
         console.warn(
-          `[UnstopConnector] Skipping event id=${raw?.id ?? "unknown"}: ` +
+          `[UnstopConnector] Page ${page} — skipping event id=${raw?.id ?? "unknown"}: ` +
             (err instanceof Error ? err.message : String(err))
         );
       }
     }
-
     return events;
   }
 
-  // ── Field Mapping ──────────────────────────────────────────────────────────
+
 
   private mapEvent(raw: UnstopRawEvent): HackAtlasEvent | null {
     // Guard: id and title are mandatory
