@@ -14,6 +14,7 @@ import { normalizeBatch } from "@/connectors/normalizer";
 import { UnstopConnector } from "@/connectors/unstop/UnstopConnector";
 import { DevpostConnector } from "@/connectors/devpost";
 import { DevfolioConnector } from "@/connectors/devfolio";
+import { MLHConnector } from "@/connectors/mlh";
 import type {
   ConnectorRunResult,
   IngestionSummary,
@@ -32,8 +33,8 @@ function buildRegistry(): ConnectorRegistry {
     new UnstopConnector(),   // Real Connector #1 — Unstop (India)
     new DevpostConnector(),  // Real Connector #2 — Devpost (Global)
     new DevfolioConnector(), // Real Connector #3 — Devfolio (India/Global)
+    new MLHConnector(),      // Real Connector #4 — MLH (Global)
     // new MockConnector(),     // uncomment to re-enable for framework testing
-    // new MLHConnector(),
   ]);
 }
 
