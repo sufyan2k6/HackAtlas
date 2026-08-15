@@ -15,6 +15,7 @@ import { UnstopConnector } from "@/connectors/unstop/UnstopConnector";
 import { DevpostConnector } from "@/connectors/devpost";
 import { DevfolioConnector } from "@/connectors/devfolio";
 import { MLHConnector } from "@/connectors/mlh";
+import { Hack2SkillConnector } from "@/connectors/hack2skill";
 import type {
   ConnectorRunResult,
   IngestionSummary,
@@ -30,11 +31,12 @@ export const dynamic = "force-dynamic";
 
 function buildRegistry(): ConnectorRegistry {
   return new ConnectorRegistry().registerAll([
-    new UnstopConnector(),   // Real Connector #1 — Unstop (India)
-    new DevpostConnector(),  // Real Connector #2 — Devpost (Global)
-    new DevfolioConnector(), // Real Connector #3 — Devfolio (India/Global)
-    new MLHConnector(),      // Real Connector #4 — MLH (Global)
-    // new MockConnector(),     // uncomment to re-enable for framework testing
+    new UnstopConnector(),      // Real Connector #1 — Unstop (India)
+    new DevpostConnector(),     // Real Connector #2 — Devpost (Global)
+    new DevfolioConnector(),    // Real Connector #3 — Devfolio (India/Global)
+    new MLHConnector(),         // Real Connector #4 — MLH (Global)
+    new Hack2SkillConnector(),  // Real Connector #5 — Hack2Skill (India)
+    // new MockConnector(),        // uncomment to re-enable for framework testing
   ]);
 }
 
