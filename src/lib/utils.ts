@@ -44,15 +44,28 @@ export function formatDateRange(start: string, end: string): string {
 }
 
 /**
+ * Currency code → symbol map for abbreviated prize display.
+ * Extend as new connector currencies are added.
+ */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  INR: "₹",
+  EUR: "€",
+  GBP: "£",
+};
+
+/**
  * Format prize pool amount to a human-readable string.
- * e.g. 100000 → "$100K"
+ * Respects the currency argument for symbol selection.
+ * e.g. (100000, "USD") → "$100K"  |  (500000, "INR") → "₹500K"
  */
 export function formatPrize(amount: number, currency = "USD"): string {
+  const symbol = CURRENCY_SYMBOLS[currency.toUpperCase()] ?? currency;
   if (amount >= 1_000_000) {
-    return `$${(amount / 1_000_000).toFixed(1)}M`;
+    return `${symbol}${(amount / 1_000_000).toFixed(1)}M`;
   }
   if (amount >= 1_000) {
-    return `$${(amount / 1_000).toFixed(0)}K`;
+    return `${symbol}${(amount / 1_000).toFixed(0)}K`;
   }
   return new Intl.NumberFormat("en-US", {
     style: "currency",

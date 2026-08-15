@@ -13,6 +13,7 @@ interface HackathonCardData {
   mode: "online" | "in-person" | "hybrid";
   status: "upcoming" | "live" | "ended";
   prizePool?: number;
+  currency?: string;
   startDate: string;
   endDate: string;
   registrationDeadline?: string;
@@ -119,7 +120,7 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
             <div>
               <div className="text-xs text-neutral-600 mb-0.5">Prize Pool</div>
               <div className="text-base font-bold text-violet-400">
-                {formatPrize(hackathon.prizePool)}
+                {formatPrize(hackathon.prizePool, hackathon.currency ?? "USD")}
               </div>
             </div>
           ) : null}

@@ -11,7 +11,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { ConnectorRegistry } from "@/connectors/registry";
 import { normalizeBatch } from "@/connectors/normalizer";
-import { MockConnector } from "@/connectors/mock/MockConnector";
 import { UnstopConnector } from "@/connectors/unstop/UnstopConnector";
 import type {
   ConnectorRunResult,
@@ -24,8 +23,8 @@ import type {
 
 function buildRegistry(): ConnectorRegistry {
   return new ConnectorRegistry().registerAll([
-    new MockConnector(),    // kept for framework testing
     new UnstopConnector(), // Real Connector #1 — Unstop (India)
+    // new MockConnector(),   // uncomment to re-enable for framework testing
     // new DevpostConnector(),
     // new MLHConnector(),
   ]);

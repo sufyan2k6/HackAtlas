@@ -43,6 +43,7 @@ export default async function DiscoverPage() {
       mode: true,
       status: true,
       prizePool: true,
+      currency: true,
       startDate: true,
       endDate: true,
       registrationDeadline: true,
@@ -117,6 +118,7 @@ export default async function DiscoverPage() {
                   mode: mapMode(h.mode),
                   status: h.status,
                   prizePool: h.prizePool ?? undefined,
+                  currency: h.currency ?? undefined,
                   startDate: h.startDate.toISOString(),
                   endDate: h.endDate.toISOString(),
                   registrationDeadline:
