@@ -78,8 +78,8 @@ model Hackathon {
   country              String?
 
   // Prizes
-  prizePool            Int?            // in USD cents to avoid float issues
-  currency             String?         @default("USD")
+  prizePool            Int?            // Total numerical prize amount in source currency
+  currency             String?         // Normalized ISO currency code (USD, INR, EUR, GBP, CAD, etc.) or null if unknown
 
   // Participation
   teamSizeMin          Int?

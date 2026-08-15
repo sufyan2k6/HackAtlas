@@ -34,6 +34,85 @@ export interface Hack2SkillRawEvent {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: Parse prize amount and currency from Hack2Skill text chunks
+// ---------------------------------------------------------------------------
+
+export function parseHack2SkillPrize(text: string): {
+  prizePool?: number;
+  currency?: string | null;
+} {
+  if (!text) return {};
+
+  // Reject overall text that has zero prize indicators
+  const hasPrizeKeyword = /(?:prize|prizes|reward|rewards|winning|winnings|bounty|grant)/i.test(text);
+  if (!hasPrizeKeyword) return {};
+
+  // Context Patterns:
+  // 1. "prize pool: ₹65 lakhs" / "prizes worth INR 8,00,000" / "cash prizes of $30,000" / "prizes: 100 EUR"
+  // 2. "₹65 lakhs in cash prizes" / "₹7,00,000/- in prizes" / "$30,000 prize pool"
+  // 3. Structured properties like `prize: "₹7,00,000"`
+  const patterns = [
+    /(?:prize\s*pool|cash\s*prizes?|total\s*prizes?|worth\s*of\s*prizes?|prizes?|rewards?|winnings?)\s*(?:of|worth|up\s*to|is|:|\-|\–)?\s*(?:(?:of|worth|up\s*to)\s*)?((?:₹|INR|\$|USD|€|EUR|£|GBP|CAD)?\s*[0-9,]+(?:\.[0-9]+)?\s*(?:lakhs?|lac|lacs?|crores?|cr|k|m)?(?:\s*\/-)?(?:\s*(?:INR|USD|EUR|GBP|CAD|₹|\$|€|£))?)/gi,
+    /((?:₹|INR|\$|USD|€|EUR|£|GBP|CAD)?\s*[0-9,]+(?:\.[0-9]+)?\s*(?:lakhs?|lac|lacs?|crores?|cr|k|m)?(?:\s*\/-)?(?:\s*(?:INR|USD|EUR|GBP|CAD|₹|\$|€|£))?)\s*(?:in\s*cash\s*prizes?|in\s*prizes?|prize\s*pool|total\s*prizes?|worth\s*of\s*prizes?|cash\s*prizes?|prizes?|rewards?)/gi,
+    /["']?prize(?:Pool|_amount)?["']?\s*:\s*["']?([^"',}\n]+)["']?/gi,
+  ];
+
+  for (const regex of patterns) {
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      const candidate = match[1] || match[0];
+      if (!candidate) continue;
+
+      // Filter out false positives (loan examples, FAQs, EMI, etc.)
+      if (/loan|home\s*loan|emi|interest|budget|fee|cost|price\s*tag|discount|tax/i.test(match[0])) {
+        continue;
+      }
+
+      // Extract currency
+      let currency: string | null = null;
+      if (/₹|INR/i.test(candidate)) currency = "INR";
+      else if (/\$|USD/i.test(candidate)) currency = "USD";
+      else if (/€|EUR/i.test(candidate)) currency = "EUR";
+      else if (/£|GBP/i.test(candidate)) currency = "GBP";
+      else if (/CAD|C\$/i.test(candidate)) currency = "CAD";
+
+      // Extract number part
+      const numMatch = candidate.match(/([0-9,]+(?:\.[0-9]+)?)/);
+      if (!numMatch) continue;
+
+      const cleanNumStr = numMatch[1].replace(/,/g, "").trim();
+      const numVal = parseFloat(cleanNumStr);
+      if (isNaN(numVal) || numVal <= 0) continue;
+
+      // Extract unit (lakh, crore, k, m)
+      const unitMatch = candidate.match(/(?:lakhs?|lac|lacs?|crores?|cr|\bk\b|\bm\b)/i);
+      let multiplier = 1;
+
+      if (unitMatch) {
+        const u = unitMatch[0].toLowerCase();
+        if (u.startsWith("lakh") || u.startsWith("lac")) multiplier = 100_000;
+        else if (u.startsWith("crore") || u === "cr") multiplier = 10_000_000;
+        else if (u === "k") multiplier = 1_000;
+        else if (u === "m") multiplier = 1_000_000;
+      }
+
+      const total = Math.round(numVal * multiplier);
+
+      // Protect against tiny single numbers without unit or currency
+      if (total < 100 && !unitMatch && !currency) {
+        continue;
+      }
+
+      if (total > 0) {
+        return { prizePool: total, currency };
+      }
+    }
+  }
+
+  return {};
+}
+
+// ---------------------------------------------------------------------------
 // Hack2SkillConnector Implementation
 // ---------------------------------------------------------------------------
 
@@ -189,27 +268,8 @@ export class Hack2SkillConnector extends BaseConnector<Hack2SkillRawEvent> {
       endDate = new Date("2026-12-31T23:59:59Z").toISOString();
     }
 
-    // Extract prize
-    let prizePool: number | undefined = undefined;
-    let currency: string | undefined = undefined;
-
-    const prizeMatch = text.match(/(?:₹|INR|\$|USD)\s*([0-9,]+(?:\s*[kKmM])?)/i);
-    if (prizeMatch) {
-      let numStr = prizeMatch[1].replace(/,/g, "").trim();
-      let multiplier = 1;
-      if (/k$/i.test(numStr)) {
-        multiplier = 1000;
-        numStr = numStr.slice(0, -1);
-      } else if (/m$/i.test(numStr)) {
-        multiplier = 1000000;
-        numStr = numStr.slice(0, -1);
-      }
-      const parsed = parseFloat(numStr);
-      if (!isNaN(parsed) && parsed > 0) {
-        prizePool = Math.round(parsed * multiplier);
-        currency = prizeMatch[0].includes("$") || prizeMatch[0].includes("USD") ? "USD" : "INR";
-      }
-    }
+    // Extract prize with contextual validation and Indian unit support
+    const { prizePool, currency } = parseHack2SkillPrize(text);
 
     // Extract logo / image
     const imgMatch = text.match(/https?:\/\/[^"']+\.(?:png|jpg|jpeg|webp|svg)/i);
@@ -224,7 +284,7 @@ export class Hack2SkillConnector extends BaseConnector<Hack2SkillRawEvent> {
       endDate,
       registrationDeadline: endDate,
       prizePool,
-      currency,
+      currency: currency ?? undefined,
       mode: "online",
       logoUrl,
       tags: ["hack2skill", "india", "innovation"],

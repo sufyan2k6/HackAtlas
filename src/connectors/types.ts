@@ -61,9 +61,9 @@ export interface HackAtlasEvent {
 
   // ── Prizes ─────────────────────────────────────────────────────────────────
 
-  /** Total prize pool in USD cents (avoids floating-point issues). */
+  /** Total numerical prize pool in source currency. */
   prizePool?: number;
-  currency?: string;
+  currency?: string | null;
 
   // ── Participation ──────────────────────────────────────────────────────────
 

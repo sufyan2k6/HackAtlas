@@ -52,26 +52,41 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: "₹",
   EUR: "€",
   GBP: "£",
+  CAD: "CA$",
+  AUD: "A$",
+  SGD: "S$",
 };
 
 /**
  * Format prize pool amount to a human-readable string.
  * Respects the currency argument for symbol selection.
- * e.g. (100000, "USD") → "$100K"  |  (500000, "INR") → "₹500K"
+ * If currency is null/unknown, renders neutral formatted number (e.g. "50,000" or "300").
+ * e.g. (100000, "USD") → "$100K"  |  (500000, "INR") → "₹500K"  |  (300, null) → "300"
  */
-export function formatPrize(amount: number, currency = "USD"): string {
-  const symbol = CURRENCY_SYMBOLS[currency.toUpperCase()] ?? currency;
+export function formatPrize(amount: number, currency?: string | null): string {
+  if (!currency || !currency.trim()) {
+    return amount.toLocaleString("en-US");
+  }
+
+  const upper = currency.toUpperCase().trim();
+  const symbol = CURRENCY_SYMBOLS[upper] ?? `${upper} `;
+
   if (amount >= 1_000_000) {
     return `${symbol}${(amount / 1_000_000).toFixed(1)}M`;
   }
   if (amount >= 1_000) {
     return `${symbol}${(amount / 1_000).toFixed(0)}K`;
   }
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: upper,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${symbol}${amount.toLocaleString("en-US")}`;
+  }
 }
 
 /**

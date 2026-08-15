@@ -146,14 +146,15 @@ export function parseDevpostDates(dateStr: string): {
 
 export function parseDevpostPrize(prizeStr: string | null | undefined): {
   prizePool?: number;
-  currency?: string;
+  currency?: string | null;
 } {
   if (!prizeStr) return {};
 
   const stripped = prizeStr.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
-  let currency = "USD";
+  let currency: string | null = null;
   if (stripped.includes("₹") || stripped.includes("INR")) currency = "INR";
+  else if (stripped.includes("$") || stripped.includes("USD")) currency = "USD";
   else if (stripped.includes("€") || stripped.includes("EUR")) currency = "EUR";
   else if (stripped.includes("£") || stripped.includes("GBP")) currency = "GBP";
   else if (stripped.includes("CAD") || stripped.includes("C$")) currency = "CAD";

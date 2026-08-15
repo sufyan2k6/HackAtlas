@@ -120,7 +120,7 @@ export function HackathonCard({ hackathon }: HackathonCardProps) {
             <div>
               <div className="text-xs text-neutral-600 mb-0.5">Prize Pool</div>
               <div className="text-base font-bold text-violet-400">
-                {formatPrize(hackathon.prizePool, hackathon.currency ?? "USD")}
+                {formatPrize(hackathon.prizePool, hackathon.currency)}
               </div>
             </div>
           ) : null}

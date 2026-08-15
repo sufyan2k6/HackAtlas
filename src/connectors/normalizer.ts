@@ -57,7 +57,7 @@ export interface NormalizedEvent {
 
   // Prizes
   prizePool: number | null;
-  currency: string;
+  currency: string | null;
 
   // Participation
   teamSizeMin: number | null;
@@ -297,7 +297,7 @@ export function normalizeEvent(raw: HackAtlasEvent): NormalizationResult {
       city: raw.city?.trim() ?? null,
       country: raw.country?.trim() ?? null,
       prizePool,
-      currency: raw.currency?.trim() ?? "USD",
+      currency: raw.currency?.trim() || null,
       teamSizeMin: raw.teamSizeMin ?? null,
       teamSizeMax: raw.teamSizeMax ?? null,
       participantCount: raw.participantCount ?? null,

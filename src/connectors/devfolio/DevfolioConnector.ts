@@ -92,10 +92,10 @@ export interface DevfolioApiResponse {
 
 export function parseDevfolioPrize(raw: DevfolioRawEvent): {
   prizePool?: number;
-  currency?: string;
+  currency?: string | null;
 } {
   let total = 0;
-  let currency = "INR";
+  let currency: string | null = null;
 
   // 1. Sum up explicit prize breakdown items
   if (Array.isArray(raw.prizes) && raw.prizes.length > 0) {
@@ -117,29 +117,38 @@ export function parseDevfolioPrize(raw: DevfolioRawEvent): {
     const amt = parseFloat(String(raw.prizes_total));
     if (!isNaN(amt) && amt > 0) {
       total = amt;
-      if (raw.prize_currency) currency = raw.prize_currency.toUpperCase();
+      if (raw.prize_currency && raw.prize_currency.trim()) {
+        currency = raw.prize_currency.trim().toUpperCase();
+      }
     }
   }
 
   // 3. Fallback: Parse prize from description text if present
   if (total === 0 && raw.desc) {
     const prizeMatch = raw.desc.match(
-      /(?:prize\s*pool|total\s*prizes?|prizes?)\s*[:\-–]?\s*(?:₹|INR|\$|USD)?\s*([0-9,]+(?:\s*[kKmM])?)/i
+      /(?:prize\s*pool|total\s*prizes?|prizes?)\s*[:\-–]?\s*(?:of|worth)?\s*((?:₹|INR|\$|USD|€|EUR|£|GBP)?\s*[0-9,]+(?:\.[0-9]+)?(?:\s*(?:lakhs?|lac|lacs?|crores?|cr|k|m))?)/i
     );
     if (prizeMatch) {
-      let valStr = prizeMatch[1].replace(/,/g, "").trim();
-      let multiplier = 1;
-      if (/k$/i.test(valStr)) {
-        multiplier = 1000;
-        valStr = valStr.slice(0, -1);
-      } else if (/m$/i.test(valStr)) {
-        multiplier = 1000000;
-        valStr = valStr.slice(0, -1);
-      }
-      const parsed = parseFloat(valStr);
-      if (!isNaN(parsed) && parsed > 0) {
-        total = parsed * multiplier;
-        if (raw.desc.includes("$") || raw.desc.includes("USD")) currency = "USD";
+      const matchText = prizeMatch[0];
+      if (/₹|INR/i.test(matchText)) currency = "INR";
+      else if (/\$|USD/i.test(matchText)) currency = "USD";
+      else if (/€|EUR/i.test(matchText)) currency = "EUR";
+      else if (/£|GBP/i.test(matchText)) currency = "GBP";
+
+      const numUnitMatch = prizeMatch[1].match(/([0-9,]+(?:\.[0-9]+)?)\s*(lakhs?|lac|lacs?|crores?|cr|k|m)?/i);
+      if (numUnitMatch) {
+        const valStr = numUnitMatch[1].replace(/,/g, "").trim();
+        const parsed = parseFloat(valStr);
+        if (!isNaN(parsed) && parsed > 0) {
+          const unit = (numUnitMatch[2] || "").toLowerCase();
+          let multiplier = 1;
+          if (unit.startsWith("lakh") || unit.startsWith("lac")) multiplier = 100_000;
+          else if (unit.startsWith("crore") || unit === "cr") multiplier = 10_000_000;
+          else if (unit === "k") multiplier = 1_000;
+          else if (unit === "m") multiplier = 1_000_000;
+
+          total = Math.round(parsed * multiplier);
+        }
       }
     }
   }
